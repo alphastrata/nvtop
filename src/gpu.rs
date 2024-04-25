@@ -141,6 +141,7 @@ pub fn try_init_gpus<'n>(
 
 #[cfg(test)]
 mod tests {
+
     use nvml_wrapper::{
         enum_wrappers::device::{Clock, ClockId},
         Nvml,
@@ -175,5 +176,41 @@ mod tests {
             });
             std::thread::sleep(std::time::Duration::from_secs(1));
         });
+    }
+
+    #[test]
+    fn processes() {
+        let nvml = Nvml::init().unwrap();
+        // Get the first `Device` (GPU) in the system
+        let device = nvml.device_by_index(0).unwrap();
+
+        dbg!(device.running_compute_processes().unwrap());
+        let mut procs = device
+            .running_graphics_processes()
+            .unwrap()
+            .into_iter()
+            .collect::<Vec<_>>();
+
+        procs.sort_by(|p1, p2| -> std::cmp::Ordering {
+            let p1_mem = match p1.used_gpu_memory {
+                nvml_wrapper::enums::device::UsedGpuMemory::Unavailable => u64::MIN,
+                nvml_wrapper::enums::device::UsedGpuMemory::Used(v) => v,
+            };
+
+            let p2_mem = match p2.used_gpu_memory {
+                nvml_wrapper::enums::device::UsedGpuMemory::Unavailable => u64::MIN,
+                nvml_wrapper::enums::device::UsedGpuMemory::Used(v) => v,
+            };
+
+            p1_mem.cmp(&p2_mem)
+        });
+
+        procs
+            .iter()
+            .rev()
+            .flat_map(|p| nvml.sys_process_name(p.pid, 20))
+            .for_each(|v| println!("{v}"));
+
+        dbg!(device.accounting_pids().unwrap());
     }
 }
