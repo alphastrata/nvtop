@@ -1,6 +1,6 @@
 use nvml_wrapper::enum_wrappers::device::{Clock, ClockId};
-use nvml_wrapper::error::NvmlError;
-use nvml_wrapper::struct_wrappers::device::PciInfo;
+
+
 use nvml_wrapper::{enum_wrappers::device::TemperatureSensor, struct_wrappers::device::MemoryInfo};
 
 use ratatui::symbols::DOT;
@@ -29,10 +29,10 @@ pub fn run(
     let mut terminal = Terminal::new(CrosstermBackend::new(std::io::stderr()))?;
     lh.debug("crossterm initialisation successful");
 
-    let mut gpu_list = crate::gpu::try_init_gpus(&nvml, lh)?;
+    let gpu_list = crate::gpu::try_init_gpus(&nvml, lh)?;
 
     let mut selected_gpu: usize = 0;
-    let mut have_fans: bool = gpu_list
+    let have_fans: bool = gpu_list
         .iter()
         .any(|gpu| gpu.inner.num_fans().map_or(0, |fc| fc) != 0);
 
